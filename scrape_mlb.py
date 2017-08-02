@@ -3,14 +3,9 @@ import requests
 
 base_url = "http://www.espn.com.au"
 
-def GetRecentResults(url):
-
-    print(url)
-
-    url = GetScheduleURLFromTeamURL(url)
+def GetRecentResultsFromTeamNewsPage(url):
 
     results_html = requests.get(base_url + url)
-
 
     if results_html.status_code == 200:
 
@@ -19,8 +14,6 @@ def GetRecentResults(url):
         print(results_html.status_code)
 
         row = soup.findAll("a", {"name": "&lpos=mlb:teamclubhouse:schedule:regular"})
-
-        # print(row)
 
         for i, r in enumerate(row):
             # print(r)
@@ -34,6 +27,41 @@ def GetRecentResults(url):
             except Exception as e:
 
                 print("Error: {}".format(e))
+
+def GetRecentResults(url):
+
+
+
+    url = GetScheduleURLFromTeamURL(url)
+
+    print(url)
+
+    results_html = requests.get(base_url + url)
+
+    if results_html.status_code == 200:
+
+        soup = BeautifulSoup(results_html.content, 'html.parser')
+
+        print(results_html.status_code, "OLOLOl")
+        print(soup)
+
+        row = soup.findAll("div", {"class": "mod-content"})#0].findAll("tr", class_= lambda x: x !=  "stathead" and x != "colhead")
+        print(row)
+
+        # row = soup.findAll("a", {"name": "&lpos=mlb:teamclubhouse:schedule:regular"})
+        #
+        for i, r in enumerate(row):
+            print(i, r)
+        #     try:
+        #         opposing_team = r.findAll("div", {"class": "game-info"})[0].get_text()
+        #         print(opposing_team)
+        #         result = r.findAll("div", {"class": "game-result"})[0].get_text()
+        #         score = r.findAll("div", {"class": "score"})[0].get_text()
+        #
+        #         print(" played {}. Result was {}. Score was {}".format(opposing_team, result, score))
+        #     except Exception as e:
+        #
+        #         print("Error: {}".format(e))
 
 def GetSchedule():
 
