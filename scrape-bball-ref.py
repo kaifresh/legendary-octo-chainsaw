@@ -3,8 +3,9 @@ import requests
 import re
 from bs4 import Comment
 import pprint
-
-
+import json
+# from .scrape_mlb import
+from output_bbal_ref import WriteDataToExcel
 pp = pprint.PrettyPrinter(indent=4)
 
 base_mlb = "https://www.baseball-reference.com"
@@ -15,6 +16,8 @@ def GetSchedule():
     schedule_url = base_mlb+"/leagues/MLB-schedule.shtml"
 
     sched_html = requests.get(schedule_url, headers=header)
+
+    all_games = []
 
     if sched_html.status_code == 200:
 
@@ -36,7 +39,14 @@ def GetSchedule():
 
             preview_url = base_mlb + preview[0]['href']
 
-            GetPreviewStats(preview_url)
+            all_games.append(GetPreviewStats(preview_url))
+
+            # break
+    #
+    # pp.pprint(all_games)
+    WriteDataToExcel(all_games)
+    # with open('temp_game_data.json', 'w') as fp:
+    #     json.dump(all_games, fp)
 
 def GetPreviewStats(preview_url):
 
@@ -63,29 +73,27 @@ def GetPreviewStats(preview_url):
             last10 = tables[0]
             team_id = last10.get("id")[-3:]
 
-            team_data = {}
+            team_data = {
+                "team_id": team_id
+            }
 
-            header_indexed = []                                         # store the headers in order (to infer this from the data cells)
+            theader = last10.find("thead").find("tr").findAll("th")
 
-            for header_cell in last10.find("thead").find("tr"):
+            for header_cell in theader:                                 # Get the column names from the header
                 header_text = header_cell.text.strip()
                 team_data[header_text] = []
-                header_indexed.append(header_text )
 
-            game_rows = last10.find("tbody").findAll("tr")
+            game_rows = last10.find("tbody").findAll("tr")             # Get actual data from table rows
             for r in game_rows:
-                game_results = r.findAll('td')#[3].text.strip()
-
+                game_results = r.findAll('td')
                 for i, cell in enumerate(game_results):
-                    team_data[header_indexed[i]].append(cell.text.strip())
+                    team_data[theader[i].text].append(cell.text.strip())    # Store data
 
-            print("TEAM DATA: {}".format(team_data))
-            print("="*50)
+            if len(preview_data) == 0:
+                preview_data["AWAY"] = team_data
+            else:
+                preview_data["HOME"] = team_data                        # HOME is always second in basketball reference
 
-            preview_data[team_id] = team_data
-
-    pp.pprint(preview_data)
-    exit()
     return preview_data
 
 
