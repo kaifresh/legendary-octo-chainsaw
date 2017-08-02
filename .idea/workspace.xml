@@ -2,7 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="071585fc-c84f-4073-9e05-053878a1e9ab" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/2017-08-03_MLB.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/BASEBALL-SHEET.docx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/FRIDAY-21.7-BASE.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/MLB.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/RUN-SHEET-BASE.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/RUN-SHEET-BASEBALL.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/~$2017-08-03_MLB.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/~$RUN-SHEET-BASE.xlsx" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/__init__.py" />
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/output_bbal_ref.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/temp_game_data.json" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/scrape-bball-ref.py" afterPath="$PROJECT_DIR$/scrape-bball-ref.py" />
     </list>
