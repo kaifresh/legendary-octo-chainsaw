@@ -20,9 +20,16 @@ formats = {}
 
 ###################################################################################################v
 
-def WriteHeaderData(team_data, worksheet, col_offset=0):
+def WriteHeaderData(team_data, worksheet, col_offset=0, is_home=None):
 
-    worksheet.write(header_row, col_offset+0, "TEAM: " + team_data['team_id'], formats['default'])     # team name
+    if is_home is None:
+        home_away = "TEAM: "
+    elif is_home:
+        home_away = "HOME: "
+    else:
+        home_away = "AWAY: "
+
+    worksheet.write(header_row, col_offset+0, home_away + team_data['team_id'], formats['default'])     # team name
 
     for i in range(n_previous_games):
         worksheet.write(header_row, col_offset+1+i, ordinal(i+1), formats['default'])
@@ -51,7 +58,7 @@ def WriteDataToExcel(data):
     global formats
 
     # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook('{}_MLB.xlsx'.format(datetime.datetime.today().strftime('%Y-%m-%d')))
+    workbook = xlsxwriter.Workbook('MLB_{}.xlsx'.format(datetime.datetime.today().strftime('%Y-%m-%d')))
     worksheet = workbook.add_worksheet()
 
     formats['default'] = workbook.add_format({'bold': True, 'center_across': True})
@@ -63,13 +70,13 @@ def WriteDataToExcel(data):
         home = game['HOME']
         away = game['AWAY']
 
-        WriteHeaderData(home, worksheet, total_col_offset)
+        WriteHeaderData(home, worksheet, total_col_offset, is_home=True)
         WriteResultData(home, worksheet, total_col_offset)
         WriteRunsData(home, worksheet, total_col_offset)
 
         total_col_offset += col_offset
 
-        WriteHeaderData(away, worksheet, total_col_offset)
+        WriteHeaderData(away, worksheet, total_col_offset, is_home=False)
         WriteResultData(away, worksheet, total_col_offset)
         WriteRunsData(away, worksheet, total_col_offset)
 
@@ -79,6 +86,10 @@ def WriteDataToExcel(data):
 
 
     workbook.close()
+
+
+def RecreateSheet():
+
 #
 # with open('temp_game_data.json', 'r') as fp:
 #     data = json.load(fp)

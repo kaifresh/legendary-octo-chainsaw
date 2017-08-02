@@ -55,39 +55,36 @@ def GetPreviewStats(preview_url):
     soup = BeautifulSoup(preview_html.content, 'html.parser')
 
     # NOTE:
-    # For some nuts reason, the last 10 games data IS IN A COMMENT when you get the raw HTML
-    # Normally, as the page loads in the browser, some javascript formats it into a proper table, but we dont have that here
-    # Given how shit it is, this may change
+    # For some nuts reason, the last 10 games data IS IN A COMMENT...
+    # I imagine that, as the page loads in the browser, some javascript formats it into a proper table...
     comments = soup.find_all(string=lambda text: isinstance(text, Comment))
 
     preview_data = {}
 
-    # print(comments)
     for c in comments:
 
         comment_soup = BeautifulSoup(c, 'html.parser')
-        tables = comment_soup.findAll("table", {"id": re.compile('last10_.*')}) # Tables we want are like id=last10_NYY
+        tables = comment_soup.findAll("table", {"id": re.compile('last10_.*')})  # We want tables like 'id=last10_NYY'
 
         if len(tables) > 0:
 
             last10 = tables[0]
-            team_id = last10.get("id")[-3:]
 
             team_data = {
-                "team_id": team_id
+                "team_id": last10.get("id")[-3:]                # last10_**NYY**
             }
 
             theader = last10.find("thead").find("tr").findAll("th")
 
-            for header_cell in theader:                                 # Get the column names from the header
+            for header_cell in theader:                                 # Get the column names from the header -> keys
                 header_text = header_cell.text.strip()
                 team_data[header_text] = []
 
-            game_rows = last10.find("tbody").findAll("tr")             # Get actual data from table rows
+            game_rows = last10.find("tbody").findAll("tr")             # Get actual data from table rows -> values
             for r in game_rows:
                 game_results = r.findAll('td')
                 for i, cell in enumerate(game_results):
-                    team_data[theader[i].text].append(cell.text.strip())    # Store data
+                    team_data[theader[i].text].append(cell.text.strip())    # Store relevant data for the key in an []
 
             if len(preview_data) == 0:
                 preview_data["AWAY"] = team_data
@@ -96,5 +93,5 @@ def GetPreviewStats(preview_url):
 
     return preview_data
 
-
-GetSchedule()
+if __name__ == "__main__":
+    GetSchedule()
