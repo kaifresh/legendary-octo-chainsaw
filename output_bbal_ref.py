@@ -4,7 +4,6 @@ import re
 import datetime
 import openpyxl
 
-
 n_previous_games = 4
 n_games_per_sheet = 8
 
@@ -20,13 +19,12 @@ runs_row = 11
 
 # ================================================================================================================
 
-profile_data_column_start = ord("d") - 96
 profile_data_row_start = 5
+profile_data_column_start = ord("d") - 96
+profile_neat_layout_column_jump = (ord("q") - 96) - profile_data_column_start  # second set of games starts at col Q
 
 profile_row_offset_home_away = 1
 profile_row_offset_game = 3
-
-profile_neat_layout_column_jump = (ord("q") - 96) - profile_data_column_start  # second set of games starts at col Q
 
 # ================================================================================================================
 
