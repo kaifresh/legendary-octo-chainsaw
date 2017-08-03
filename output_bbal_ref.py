@@ -1,26 +1,36 @@
-import xlsxwriter
 import json
 import pprint
 import re
 import datetime
-
-#
-# CODE GOLF
-ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
-
-n_previous_games = 5
-col_offset = n_previous_games + 2
-
-header_row = 0
-result_row = 1
-runs_row = 2
+import openpyxl
 
 
-formats = {}
+n_previous_games = 4
+n_games_per_sheet = 8
 
-###################################################################################################v
+# ================================================================================================================
 
-def WriteHeaderData(team_data, worksheet, col_offset=0, is_home=None):
+ratings_data_column_start = ord("l") - 96
+col_offset_home_away = 2
+col_offset_games = 4
+
+header_row = 9
+result_row = 10
+runs_row = 11
+
+# ================================================================================================================
+
+profile_data_column_start = ord("d") - 96
+profile_data_row_start = 5
+
+profile_row_offset_home_away = 1
+profile_row_offset_game = 3
+
+profile_neat_layout_column_jump = (ord("q") - 96) - profile_data_column_start  # second set of games starts at col Q
+
+# ================================================================================================================
+
+def WriteHeader(team_data, worksheet, col_offset=0, is_home=None):
 
     if is_home is None:
         home_away = "TEAM: "
@@ -29,73 +39,117 @@ def WriteHeaderData(team_data, worksheet, col_offset=0, is_home=None):
     else:
         home_away = "AWAY: "
 
-    worksheet.write(header_row, col_offset+0, home_away + team_data['team_id'], formats['default'])     # team name
+    worksheet.cell(column=col_offset, row=header_row, value="{} {}".format(home_away, team_data['team_id']))
+
+
+def WriteResult(team_data, worksheet, col_offset=0):
 
     for i in range(n_previous_games):
-        worksheet.write(header_row, col_offset+1+i, ordinal(i+1), formats['default'])
+        worksheet.cell(column=col_offset + i, row=result_row, value="{}".format( team_data['W/L'][i] ))
 
-def WriteResultData(team_data, worksheet, col_offset=0):
+def WriteRuns(team_data, worksheet, col_offset=0):
 
-    worksheet.write(result_row, col_offset+0, "RESULT", formats['default'])
-
-    for i in range(5):
-        worksheet.write(result_row, col_offset+i+1, team_data['W/L'][i], formats['default'])
-
-
-def WriteRunsData(team_data, worksheet, col_offset=0):
-
-    worksheet.write(runs_row, col_offset+0, "RUNS", formats['default'])
-
-    for i in range(5):
+    for i in range(n_previous_games):
         score = team_data['Score'][i]
-        score = re.search(r'\d+', score).group()                        # get only the first number using .search()
-        worksheet.write(runs_row, col_offset+i+1, score, formats['default'])
+        score = re.search(r'\d+', score).group()  # get only the first number using .search()
+        worksheet.cell(column=col_offset + i, row=runs_row, value=score)
 
-###################################################################################################v
+# ================================================================================================================
+
+def WriteProfile(pitcher_data, worksheet, row_offset=0, col_offset=0):
+
+    worksheet.cell(column=col_offset, row=row_offset, value=pitcher_data['team_id'])
+    worksheet.cell(column=col_offset + 1, row=row_offset, value=pitcher_data['name'])
+    # print(pitcher_data)
+
+    # Write previous decisions
+    for i in range(n_previous_games):
+        try:
+            worksheet.cell(column=col_offset + 2 + i, row=row_offset, value=pitcher_data['DECISION'][i])
+        except:
+            worksheet.cell(column=col_offset + 2 + i, row=row_offset, value="NO DATA")
+
+    # print("\n\n", "="*50, "\n")
+
+# ================================================================================================================
+
 
 def WriteDataToExcel(data):
 
-    global formats
+    base = openpyxl.load_workbook(filename="worksheets/RUN-SHEET-BASE.xlsx")
 
-    # Create a workbook and add a worksheet.
-    workbook = xlsxwriter.Workbook('MLB_{}.xlsx'.format(datetime.datetime.today().strftime('%Y-%m-%d')))
-    worksheet = workbook.add_worksheet()
+    # = = = = = = = = = = = = = = = = = = = = = = RATINGS  = = = = = = = = = = = = = = = = = =
 
-    formats['default'] = workbook.add_format({'bold': True, 'center_across': True})
-    formats['border'] = workbook.add_format({'right': True})
+    all_ratings = [base['RATINGS - 1'], base['RATINGS - 2']]
 
-    total_col_offset = 0
+    print(base.sheetnames)
 
-    for game in data:
+    total_col_offset = -1
+    sheet_idx = -1
+
+    for i, game in enumerate(data):
+
+        if i % n_games_per_sheet == 0:                                      # Aneryin spreads games over sheets, so do this too...
+            sheet_idx += 1                                                  # Go to the next sheet
+            total_col_offset = ratings_data_column_start + 1                # Start at the beginning column
+
+        ratings = all_ratings[sheet_idx]
+
         home = game['HOME']
         away = game['AWAY']
 
-        WriteHeaderData(home, worksheet, total_col_offset, is_home=True)
-        WriteResultData(home, worksheet, total_col_offset)
-        WriteRunsData(home, worksheet, total_col_offset)
+        WriteHeader(home, ratings, total_col_offset - 1, is_home=True)
+        WriteResult(home, ratings, total_col_offset)
+        WriteRuns(home, ratings, total_col_offset)
 
-        total_col_offset += col_offset
+        total_col_offset += n_previous_games + col_offset_home_away
 
-        WriteHeaderData(away, worksheet, total_col_offset, is_home=False)
-        WriteResultData(away, worksheet, total_col_offset)
-        WriteRunsData(away, worksheet, total_col_offset)
+        WriteHeader(away, ratings, total_col_offset - 1, is_home=False)
+        WriteResult(away, ratings, total_col_offset)
+        WriteRuns(away, ratings, total_col_offset)
 
-        total_col_offset += col_offset + 2
+        total_col_offset += n_previous_games + col_offset_games
+
+    # = = = = = = = = = = = = = = = = = = = = = PROFILING  = = = = = = = = = = = = = = = = = = = =
+
+    profiling = base['PROFILING']
+
+    pitcher_row = -1
+    pitcher_col = -1
+
+    for i, game in enumerate(data):
+
+        if i % n_games_per_sheet == 0:  # Aneryin spreads games over sheets, so do this too...
+            pitcher_row = profile_data_row_start
+            pitcher_col = profile_data_column_start + (profile_neat_layout_column_jump * round(i/n_games_per_sheet, 0))
+
+        try:
+            home = game['HOME']['pitcher']
+            away = game['AWAY']['pitcher']
+        except:
+            pitcher_row += profile_row_offset_home_away
+            pitcher_row += profile_row_offset_game
+            continue
+
+        WriteProfile(home, profiling, pitcher_row, pitcher_col)
+
+        pitcher_row += profile_row_offset_home_away
+
+        WriteProfile(away, profiling, pitcher_row, pitcher_col)
+
+        pitcher_row += profile_row_offset_game
+
+    # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+    base.save("MLB_{}.xlsx".format(datetime.datetime.today().strftime('%Y-%m-%d')))
 
 
+# ================================================================================================================
 
+if __name__ == "__main__":
 
-    workbook.close()
+    with open('temp_game_data.json', 'r') as fp:
+        data = json.load(fp)
+        # pprint.pprint(data)
+        WriteDataToExcel(data)
 
-
-def RecreateSheet():
-
-#
-# with open('temp_game_data.json', 'r') as fp:
-#     data = json.load(fp)
-#
-#     WriteDataToExcel(data)
-#
-#
-#
-#     pprint.pprint(data)
