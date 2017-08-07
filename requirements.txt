@@ -1,0 +1,4 @@
+beautifulsoup4==4.5.1
+openpyxl==2.3.5
+requests==2.9.1
+requests-oauthlib==0.8.0

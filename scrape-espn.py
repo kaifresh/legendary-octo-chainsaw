@@ -1,7 +1,9 @@
 from bs4 import BeautifulSoup
-import requests
-import re
 from bs4 import Comment
+
+import requests
+
+import re
 import pprint
 import json
 import datetime
@@ -14,9 +16,7 @@ pp = pprint.PrettyPrinter(indent=4)
 base_mlb = "http://www.espn.com"
 header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0',}
 
-
-
-
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 def GetSchedule():
     # So you go to the scheduel
 
@@ -33,6 +33,8 @@ def GetSchedule():
 
     all_games = []
 
+    count = 0
+
     if sched_html.status_code == 200:
 
         soup = BeautifulSoup(sched_html.content, 'html.parser')
@@ -46,14 +48,21 @@ def GetSchedule():
 
             for game in game_rows:
 
+                print("Analysing game {}".format(count))
+                count += 1
+
                 game_data = GetGameData(game)
                 if game_data is not None:
+
                     all_games.append(game_data)
 
 
             print("` " * 100)
 
+    return all_games
 
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 def GetGameData(game):
     team_data = game.findAll("a", {"class": "team-name"})  # get team names
@@ -64,14 +73,70 @@ def GetGameData(game):
         return None
 
     game_data = {}
-    game_data["HOME"] = GetTeamData(team_data[1])  # format is "AWAY @ HOME"
 
+    game_data["SOURCE"] = "ESPN"
 
+    for i, side in enumerate(["AWAY", "HOME"]):
 
+        print('Get Game Data: {}'.format(side))
+
+        game_data[side] = GetTeamData(team_data[i])  # format is "AWAY @ HOME"
+
+        game_data[side]['pitcher'] = GetPitcherData(pitcher_data[i])
+        game_data[side]['pitcher']['team_id'] = game_data[side]['team_id']
+
+    print("-"*100)
+
+    return game_data
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+def GetPitcherData(pitcher_anchor):
+
+    print("\tGet Pitcher Data: {}".format(pitcher_anchor.find(text=True)))
+
+    pitcher_data = {}
+
+    pitcher_data["name"] = pitcher_anchor.find(text=True)
+
+    team_html = requests.get(pitcher_anchor['href'], headers=header)
+
+    if team_html.status_code == 200:
+
+        soup = BeautifulSoup(team_html.content, 'html.parser')
+
+        last_ten_games = soup.findAll("div", {"class": "player-card"})[0].findAll("table")[0].findAll("tr")
+
+        header_reference = []                   # allows you to track header data by index. Is there a cleaner way?
+
+        for game in last_ten_games:
+
+            _class = game.get("class")[0]
+
+            if _class == 'stathead':
+                continue
+            elif _class == 'colhead':           # This is the header row. Populate dict keys here.
+
+                for header_cell in game.findAll("td"):
+                    header_col_name = header_cell['title'] if header_cell.has_attr('title') else ''.join(header_cell.findAll(text=True))
+                    pitcher_data[header_col_name] = []
+                    header_reference.append(header_col_name)
+
+            else:
+                                                # Standard case: populate each dict-keyed array with data...
+                for i, data_cell in enumerate(game.findAll("td")):
+                    pitcher_data[ header_reference[i] ].append( ''.join(data_cell.findAll(text=True)) )
+
+    # Split 'W 2-5' into 'W' & '2-5'
+    pitcher_data['SCORE'] = [x[2:] for x in pitcher_data['RESULT']]
+    pitcher_data['RESULT'] = [x[0] for x in pitcher_data['RESULT']]
+
+    return pitcher_data
 
 
 def GetTeamData(team_anchor):
-    print(team_anchor)
+
+    print("\tGet Team Data: {}".format(team_anchor.find("abbr")["title"]))
 
     team_data = {
         "team_id": team_anchor.find("abbr")["title"],
@@ -80,13 +145,11 @@ def GetTeamData(team_anchor):
         "Opp": [],
         "Date & Box": [],
     }
-    print(team_data)
 
-    # team_url = base_mlb+team_anchor['href']
+    # Modify the URL to get to the FULL stats page
     full_schedule_endpoint = os.path.dirname( team_anchor['href'].replace("team", "team/schedule") )
     team_url = base_mlb+full_schedule_endpoint
-
-    print(team_url)
+    # team_url = base_mlb+team_anchor['href']
 
     team_html = requests.get(team_url, headers=header)
 
@@ -95,100 +158,44 @@ def GetTeamData(team_anchor):
 
         game_rows = soup.findAll("tr")
 
-        ### August 2017, column header positions
+        ### This is a fragile method...
+        ### Column header positions as of August 2017...
         date_col = 0
         opponent_col = 1
         result_col = 2
         winning_pitcher_col = 3
         losing_pitcher_col = 3
 
-
-
         for game in game_rows:
-            print("~ " * 100)
-            # print(game.prettify())
-
-
-            # Who / Where
-            # Score
-            # W/L
-
             cells = game.findAll("td")
-
 
             if len(cells) > 1:
                 opposing_team = cells[ opponent_col ].findAll(text=True)
                 result_and_score = cells[ result_col ].findAll(text=True)
                 date = cells[date_col].findAll(text=True)
 
-
                 if len(opposing_team) == 2 and len(result_and_score) == 2 and len(date) == 1:
 
-                    print(date)
-                    print(opposing_team)
-                    print(result_and_score)
-
-                    result = result_and_score[0]
+                    win_or_lose = result_and_score[0]  # laid out as something like:  [W, 5-2]
                     score = result_and_score[1]
                     date = date[0]
                     opposing_team = ' '.join(opposing_team)
 
+                    team_data["W/L"].append(win_or_lose)
+                    team_data["Score"].append(score)
+                    team_data["Date & Box"].append(date)
+                    team_data["Opp"].append(opposing_team)
 
+    return team_data
 
-
-
-
-            # print("." * 200)
-            # win_lose = game.findAll("li", {"class": "game-status"})
-            # score = game.findAll("li", {"class": "score"})
-            # opposing_team = game.findAll("ul", {"class": "game-schedule"})
-            #
-            # if len(win_lose) > 0 and len(score) > 0 and len(opposing_team) > 0 :
-            #
-            #     # win_lose = win_lose[0].find(text=True)
-            #     # score = score[0].find(text=True)
-            #     # opposing_team = opposing_team[0].find(text=True)
-            #
-            #
-            #     print(win_lose)
-            #
-            #     print(score)
-            #     print(opposing_team)
-            #     print("." * 200)
-
-
-
-    # team_html = requests.get(team_url, headers=header)
-
-    # if team_html.status_code == 200:
-    #     soup = BeautifulSoup(team_html.content, 'html.parser')
-    #
-    #     previous_games = soup.find("section", {"class": "club-schedule"})
-    #
-    #     prev_games_info = previous_games.findAll("div", {"class": "game-meta"})
-    #
-    #     for game in prev_games_info:
-    #
-    #         win_lose = game.find("div", "game-result_and_score")
-    #         score = game.find("div", "score")
-    #
-    #         opposing_team = game.parent.find("div", {"class": "game-info"})
-    #         print(opposing_team)
-    #
-    #         if win_lose is not None and score is not None:
-    #             team_data["W/L"].append( win_lose.find(text=True) )
-    #             team_data["Score"].append( score.find(text=True) )
-    #
-    #
-    #         # print(score)
-    #         #
-    #         # except:
-    #         #     pass
-    #
-    # print("." * 200)
-    #
-    exit()
-print("=" * 200)
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 if __name__ == "__main__":
-    GetSchedule()
+
+    with open('temp_espn_game_data.json', 'w') as fp:
+        data = GetSchedule()
+        # pprint.pprint(data)
+        json.dump(data, fp)
+
+
+        # WriteDataToExcel(data)
