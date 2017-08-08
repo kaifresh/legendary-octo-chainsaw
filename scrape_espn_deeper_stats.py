@@ -13,14 +13,124 @@ import os
 base_mlb = "http://www.espn.com"
 header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0',}
 
+# ========================================================================================
+# ---------------------------------------Pitcher------------------------------------------
+# ========================================================================================
+
+def GetPitcherDeepStats(pitcher_anchor, opposing_team_anchor):
+
+    # Win   @   HOME
+    # Loss  @   HOME
+    # Win       AWAY
+    # Loss      AWAY
+    # ERA       TOTAL
+
+    endpoint = pitcher_anchor['href'].replace("player",  "player/splits")
+
+    # win loss home away
+    pitcher_wl_ha = requests.get(endpoint, headers=header)
+
+    if pitcher_wl_ha.status_code == 200:
+
+        soup = BeautifulSoup(pitcher_wl_ha.content, 'html.parser')
+        table_rows = soup.find("table", {"class": "tablehead"}).findAll("tr")
+
+        all_pitcher_data = ScrapeStatsDataTableRows(table_rows)
+
+        pprint.pprint(all_pitcher_data)
+
+        home_Ws = all_pitcher_data['By Breakdown']['Home']['W']
+        home_Ls = all_pitcher_data['By Breakdown']['Home']['L']
+        away_Ws = all_pitcher_data['By Breakdown']['Away']['W']
+        away_Ls = all_pitcher_data['By Breakdown']['Away']['L']
+
+        ERA = all_pitcher_data['Overall']['Total']['ERA']
+
+        opponent_name = opposing_team_anchor.find("abbr").text
+        ERA_vs_opponent = all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP']
+        IP_vs_opponent = all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP']
+
+        return home_Ws, home_Ls, away_Ws, away_Ls, ERA, ERA_vs_opponent, IP_vs_opponent, all_pitcher_data
+# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ----------------------------------------Team Wins/Losses--------------------------------------------
+# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def GetHomeWinsLosses(team_anchor):
+
+    endpoint = team_anchor['href'].replace("team/", "team/stats/splits/")
+
+    wins_loses_html = requests.get(base_mlb + endpoint, headers=header)
+
+    if wins_loses_html.status_code == 200:
+        soup = BeautifulSoup(wins_loses_html.content, 'html.parser')
+
+        return GetHomeAwayWL(soup)
+
+
+def GetHomeAwayWL(soup):
+    batting_table_rows = soup.find("table", {"class": "tablehead"}).findAll("tr")
+
+    all_batting_rows = ScrapeStatsDataTableRows(batting_table_rows)['NAME']
+
+    home_Ws = all_batting_rows['Home']['W']
+    home_Ls = all_batting_rows['Home']['L']
+    away_Ws = all_batting_rows['Away']['W']
+    away_Ls = all_batting_rows['Away']['L']
+
+    return home_Ws, home_Ls, away_Ws, away_Ls, all_batting_rows
+
+# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# --------------------------------Team Batting-------------------------------------------
+# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def GetAtBatsAndRunsTotals(team_anchor):
+    return GetAtBatsRunsGenericWrap( team_anchor['href'] )
+
+def GetHomeBatsRunsSplits(team_anchor):
+    return GetAtBatsRunsGenericWrap(team_anchor['href'], "/split/33")
+
+def GetAwayBatsRunsSplits(team_anchor):
+    return GetAtBatsRunsGenericWrap(team_anchor['href'], "/split/34")
+
+def GetAtBatsRunsGenericWrap(href, extra_endpoint=""):
+    endpoint = os.path.dirname(href.replace("team/", "team/stats/batting/"))
+    endpoint += extra_endpoint
+
+    bats_runs_html = requests.get(base_mlb + endpoint, headers=header)
+
+    if bats_runs_html.status_code == 200:
+        soup = BeautifulSoup(bats_runs_html.content, 'html.parser')
+
+        return GetAtBatsRunsGeneric(soup)
+
+def GetAtBatsRunsGeneric(soup):
+    batting_table_rows = soup.find("table", {"class": "tablehead"}).findAll("tr")
+
+    all_batting_rows = ScrapeStatsDataTableRows(batting_table_rows)['NAME']
+
+    at_bats = all_batting_rows['Totals']['AB']
+    runs = all_batting_rows['Totals']['R']
+
+    return at_bats, runs, all_batting_rows
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#               Could generalise this to the team data. The format works the same...
+#    Generic scraper...
+#       Requires a table format that has classes of:
+#            stathead        name of the table (unused)
+#            colhead         row where each column is the name of a stat
+#            (even|odd)row   row where [0] is the name of the category and,
+#                            each cell is the data corresponding to the corresponding stat in colhead
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def ScrapeStatsDataTableRows(table_rows):
     all_table_data = {}
 
     '''
+        --- HOW THIS WORKS ---
     You are making a 3 tiered dictionary
     depth 0 = each table
     depth 1 = the rows of the table
@@ -34,13 +144,18 @@ def ScrapeStatsDataTableRows(table_rows):
 
     for row in table_rows:
 
-        row_class = row.get("class")[0]
+        try:   # sometimes the table row class is missing, by default treat it as a data row. May create errors...
+            row_class = row.get("class")[0]
+        except:
+            row_class = None
 
         if row_class == "colhead":  # Store the keys for each data cell (i.e. columns of header)
 
             section_header = row.findAll("td")
             cur_section_key = section_header[0].text    # Key for the depth 1 dictionary
-            all_table_data[cur_section_key] = {}        # The depth 0 dict (whole table)
+
+            if cur_section_key not in all_table_data:       # If two sections have the same name, you wont overwrite old data
+                all_table_data[cur_section_key] = {}        # The depth 0 dict (whole table)
 
             for header_cell in enumerate(section_header):
                 if len(header_cell) > 0:
@@ -61,177 +176,3 @@ def ScrapeStatsDataTableRows(table_rows):
                     all_table_data[cur_section_key][section_data[0].text][header_keys[i]] = cell.text
 
     return all_table_data
-
-# ========================================================================================
-# ---------------------------------------Pitcher------------------------------------------
-# ========================================================================================
-
-def GetPitcherWinLoss(pitcher_anchor, opposing_team_anchor):
-
-    # Win   @   HOME
-    # Loss  @   HOME
-    # Win       AWAY
-    # Loss      AWAY
-    # ERA       TOTAL
-
-    endpoint = pitcher_anchor['href'].replace("player",  "player/splits")
-    print(endpoint)
-
-    # win loss home away
-    pitcher_wl_ha = requests.get(endpoint, headers=header)
-
-    if pitcher_wl_ha.status_code == 200:
-
-        soup = BeautifulSoup(pitcher_wl_ha.content, 'html.parser')
-        table_rows = soup.find("table", {"class": "tablehead"}).findAll("tr")
-
-        all_pitcher_data = ScrapeStatsDataTableRows(table_rows)
-
-        home_Ws = all_pitcher_data['By Breakdown']['Home']['W']
-        home_Ls = all_pitcher_data['By Breakdown']['Home']['L']
-        away_Ws = all_pitcher_data['By Breakdown']['Away']['W']
-        away_Ls = all_pitcher_data['By Breakdown']['Away']['L']
-
-        ERA = all_pitcher_data['Overall']['Total']['ERA']
-
-        opponent_name = "TODODODO"
-        ERA_vs_opponent = all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP']
-        IP_vs_opponent = all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP']
-
-
-        pprint.pprint(all_pitcher_data)
-
-
-
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# ----------------------------------------Team--------------------------------------------
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-def GetHomeWinsLosses(team_anchor):
-    #/mlb/team/_/name/mia/miami - marlins
-    #mlb/team/stats/splits/_/name/det/detroit-tigers
-
-    endpoint = team_anchor['href'].replace("team/", "team/stats/splits/")
-
-    print(base_mlb + endpoint)
-
-    wins_loses_html = requests.get(base_mlb + endpoint, headers=header)
-
-    if wins_loses_html.status_code == 200:
-        soup = BeautifulSoup(wins_loses_html.content, 'html.parser')
-
-        return GetHomeAwayWL(soup)
-
-def GetHomeAwayWL(soup):
-
-    home_row_idx = GetRowIndexOfText(soup, "tablehead", "Home")
-    away_row_idx = GetRowIndexOfText(soup, "tablehead", "Away")
-    win_col_idx = GetTextIndexInHeader(soup, "colhead", "W")
-    loss_col_idx = GetTextIndexInHeader(soup, "colhead", "L")
-
-    table = soup.find("table", {"class": "tablehead"})
-    all_rows = table.findAll("tr")
-
-    home_wins = all_rows[home_row_idx].findAll("td")[win_col_idx].find(text=True)
-    home_loses = all_rows[home_row_idx].findAll("td")[loss_col_idx].find(text=True)
-    away_wins = all_rows[away_row_idx].findAll("td")[win_col_idx].find(text=True)
-    away_loses = all_rows[away_row_idx].findAll("td")[loss_col_idx].find(text=True)
-    print(home_wins)
-
-    return home_wins, home_loses, away_wins, away_loses
-        
-
-def GetRowIndexOfText(soup, table_class, text):
-    table = soup.find("table", {"class": table_class})
-
-    all_rows = table.findAll("tr")
-
-    candidate_row = table.find("td", text=text).parent  # Find the cell, want the row/parent
-
-    return all_rows.index(candidate_row)
-
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# ----------------------------------------------------------------------------------------
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# --------------------------------team batting-------------------------------------------
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-def GetAtBatsAndRunsTotals(team_anchor):
-
-    # Row total for column AB
-    # Row total for column R
-
-    # Build the URL
-    endpoint = os.path.dirname( team_anchor['href'].replace("team/", "team/stats/batting/") )
-
-    bats_runs_html = requests.get(base_mlb+endpoint, headers=header)
-
-    if bats_runs_html.status_code == 200:
-
-        soup = BeautifulSoup(bats_runs_html.content, 'html.parser')
-
-        return GetAtBatsRunsGeneric(soup)
-
-
-def GetHomeBatsRunsSplits(team_anchor):
-    # http: // www.espn.com / mlb / team / stats / batting / _ / name / det / split / 33
-
-    #"TOTAL AB"
-
-    # Build the URL
-    endpoint = os.path.dirname( team_anchor['href'].replace("team/", "team/stats/batting/") )
-    endpoint += "/split/33"  # ESPN code for batting @ HOME
-
-    bats_runs_html = requests.get(base_mlb + endpoint, headers=header)
-
-    if bats_runs_html.status_code == 200:
-
-        soup = BeautifulSoup(bats_runs_html.content, 'html.parser')
-
-        return GetAtBatsRunsGeneric(soup)
-
-
-def GetAwayBatsRunsSplits(team_anchor):
-    # http: // www.espn.com / mlb / team / stats / batting / _ / name / det / split / 33
-
-    #"TOTAL AB"
-
-    # Build the URL
-    endpoint = os.path.dirname( team_anchor['href'].replace("team/", "team/stats/batting/") )
-    endpoint += "/split/34"  # ESPN code for batting AWAY
-
-    bats_runs_html = requests.get(base_mlb + endpoint, headers=header)
-
-    if bats_runs_html.status_code == 200:
-
-        soup = BeautifulSoup(bats_runs_html.content, 'html.parser')
-
-        return GetAtBatsRunsGeneric(soup)
-
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# ----------------------------------------------------------------------------------------
-# - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-def GetTextIndexInHeader(soup, header_row_class, text):
-    header_row = soup.find("tr", {"class": header_row_class}).findAll("td")
-    header_cell_with_target_text = soup.findAll("td", text=text)
-    return header_row.index(header_cell_with_target_text[0])
-
-def GetAtBatsRunsGeneric(soup):
-
-    at_bats_idx = GetTextIndexInHeader(soup, "colhead", "AB")
-    runs_idx = GetTextIndexInHeader(soup, "colhead", "R")
-
-    # Get the data from the correct columns in the totals row
-    totals_row = soup.find("tr", {"class": "total"}).findAll("td")
-    at_bats = totals_row[at_bats_idx].find(text=True)
-    runs = totals_row[runs_idx].find(text=True)
-
-    print(at_bats)
-    print(runs)
-
-    return at_bats, runs

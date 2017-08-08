@@ -77,11 +77,11 @@ def GetGameData(game):
         return None
 
     # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
-    # at_bats, runs = deep.GetAtBatsAndRunsTotals(team_data[0])
-    # at_bats, runs = deep.GetAwayBatsRunsSplits(team_data[0])
-    # at_bats, runs = deep.GetHomeBatsRunsSplits(team_data[0])
-    # home_wins, home_loses, away_wins, away_loses = deep.GetHomeWinsLosses(team_data[0])
-    deep.GetPitcherWinLoss(pitcher_data[0], team_data[1])
+    # at_bats, runs, all_batting_rows = deep.GetAtBatsAndRunsTotals(team_data[0])
+    # at_bats, runs, all_batting_rows = deep.GetAwayBatsRunsSplits(team_data[0])
+    # at_bats, runs, all_batting_rows = deep.GetHomeBatsRunsSplits(team_data[0])
+    # home_wins, home_loses, away_wins, away_loses, all_batting_data = deep.GetHomeWinsLosses(team_data[0])
+    home_Ws, home_Ls, away_Ws, away_Ls, ERA, ERA_vs_opponent, IP_vs_opponent, all_pitcher_data = deep.GetPitcherDeepStats(pitcher_data[0], team_data[1]) # abs(x - y) or some thing... cross entropy stylez
 
     exit()
     # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
