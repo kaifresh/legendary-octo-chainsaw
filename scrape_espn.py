@@ -9,6 +9,7 @@ import json
 import datetime
 import os
 from multiprocessing.dummy import Pool as ThreadPool
+import multiprocessing
 
 from output_scraped_data import WriteDataToExcel
 import scrape_espn_deeper_stats as deep
@@ -18,8 +19,15 @@ pp = pprint.PrettyPrinter(indent=4)
 base_mlb = "http://www.espn.com"
 header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0',}
 
+# For status messages...
+__n_games = 0
+__cur_n = 0
+
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 def GetSchedule():
+
+    global __n_games
+
     # So you go to the scheduel
 
     # For eahc game on a given day follow:
@@ -34,9 +42,8 @@ def GetSchedule():
     sched_html = requests.get(schedule_url, headers=header)
 
     all_games = []
-    pool = ThreadPool(12)
-    #
-    # count = 0
+
+    pool = ThreadPool(multiprocessing.cpu_count()) # Max out the machine's cores
 
     if sched_html.status_code == 200:
 
@@ -63,28 +70,16 @@ def GetSchedule():
 
             game_rows = games.findAll("tr", {"class": ["odd", "even"]})             # get all rows
 
-            all_games = pool.map(GetGameData, game_rows)
-
-            # for game in game_rows:
-            #
-            #     print("Analysing game {}".format(count))
-            #     count += 1
+            __n_games = len(game_rows)
 
 
-                # # DO THIS IN THREADS
-                # game_data = GetGameData(game)
-                #
-                # if game_data is not None:
-                #
-                #     all_games.append(game_data)
 
 
-            print("` " * 100)
+            # Takes an array of args and passes it to the function, each in a separate thread
+            all_games = pool.map(GetGameData, game_rows) # function, args
 
     pool.close()
     pool.join()
-
-    print(all_games)
 
     return all_games
 
@@ -93,12 +88,15 @@ def GetSchedule():
 #                               Where the magic happens...
 
 def GetGameData(game):
+
+    global __cur_n
+
     team_data = game.findAll("a", {"class": "team-name"})  # get team names
     pitcher_data = game.findAll("a", {"name": "&lpos=mlb:schedule:player"})
     game_date = game.findAll("td", {"data-behavior": "date_time"})  # will be none for non-upcoming games
 
 
-    print("Getting Game Data for {}".format(team_data.findAll(text=True)))
+    print("Getting Game Data for {}".format( [''.join(x.findAll(text=True)) for x in team_data]))
 
     if len(game_date) == 0:
         return None
@@ -109,7 +107,7 @@ def GetGameData(game):
 
     for i, side in enumerate(["AWAY", "HOME"]):
 
-        print('Get Game Data: {}'.format(side))
+        # print('Get Game Data: {}'.format(side))
 
         game_data[side] = GetTeamData(team_data[i])  # format is "AWAY @ HOME"
 
@@ -140,7 +138,11 @@ def GetGameData(game):
         # exit()
         # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
 
-    print("-"*100)
+    # print("-"*100)
+
+    __cur_n += 1
+
+    print("Scraping: {0:0.0f}%".format((__cur_n/__n_games) * 100))
 
     return game_data
 
@@ -148,7 +150,7 @@ def GetGameData(game):
 
 def GetPitcherData(pitcher_anchor):
 
-    print("\tGet Pitcher Data: {}".format(pitcher_anchor.find(text=True)))
+    # print("\tGet Pitcher Data: {}".format(pitcher_anchor.find(text=True)))
 
     pitcher_data = {}
 
@@ -191,7 +193,7 @@ def GetPitcherData(pitcher_anchor):
 
 def GetTeamData(team_anchor):
 
-    print("\tGet Team Data: {}".format(team_anchor.find("abbr")["title"]))
+    # print("\tGet Team Data: {}".format(team_anchor.find("abbr")["title"]))
 
     team_data = {
         "team_id": team_anchor.find("abbr")["title"],
