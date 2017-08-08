@@ -17,7 +17,7 @@ header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) G
 # ---------------------------------------Pitcher------------------------------------------
 # ========================================================================================
 
-def GetPitcherDeepStats(pitcher_anchor, opposing_team_anchor):
+def GetPitcherSuitabilityStats(pitcher_anchor, opposing_team_anchor):
 
     # print("\tGet Pitcher Deep Stats: {}".format(pitcher_anchor.find(text=True)))
 
@@ -38,6 +38,21 @@ def GetPitcherDeepStats(pitcher_anchor, opposing_team_anchor):
         table_rows = soup.find("table", {"class": "tablehead"}).findAll("tr")
 
         all_pitcher_data = ScrapeStatsDataTableRows(table_rows)
+
+        opponent_name = opposing_team_anchor.find("abbr").text
+
+        try:
+            all_pitcher_data['Current Opponent Data'] = {
+                "team_id": opponent_name,
+                "ERA": all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['ERA'],
+                "IP": all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP'],
+            }
+        except:
+            all_pitcher_data['Current Opponent Data'] = {
+                "team_id": None,
+                "ERA": None,
+                "IP": None
+            }
         #
         # home_Ws = all_pitcher_data['By Breakdown']['Home']['W']
         # home_Ls = all_pitcher_data['By Breakdown']['Home']['L']
@@ -174,6 +189,7 @@ def ScrapeStatsDataTableRows(table_rows):
             for header_cell in enumerate(section_header):
                 if len(header_cell) > 0:
                     header_cell = [x for x in header_cell if "bs4" in str(type(x))][0]  # strip out non bs4 glitches
+
                 header_keys.append(header_cell.text)
 
         elif row_class == "stathead":

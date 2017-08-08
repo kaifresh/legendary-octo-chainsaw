@@ -72,9 +72,6 @@ def GetSchedule():
 
             __n_games = len(game_rows)
 
-
-
-
             # Takes an array of args and passes it to the function, each in a separate thread
             all_games = pool.map(GetGameData, game_rows) # function, args
 
@@ -126,7 +123,7 @@ def GetGameData(game):
         game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
 
         game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
-        game_data[side]['pitcher_deep'] = deep.GetPitcherDeepStats(pitcher_data[i], team_data[ abs(i - 1)])  # abs(x - y) or some thing... cross entropy stylez
+        game_data[side]['pitcher_deep'] = deep.GetPitcherSuitabilityStats(pitcher_data[i], team_data[ abs(i - 1)])  # abs(x - y) or some thing... cross entropy stylez
 
 
         # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
