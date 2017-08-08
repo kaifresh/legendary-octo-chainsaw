@@ -135,8 +135,6 @@ def WriteDataToExcel(data):
             pitcher_row = profile_data_row_start
             pitcher_col = profile_data_column_start + (profile_neat_layout_column_jump * round(i/n_games_per_sheet, 0))
 
-
-
         try:
             home = game['HOME']['pitcher']
             away = game['AWAY']['pitcher']
@@ -159,10 +157,10 @@ def WriteDataToExcel(data):
 
 
 # ================================================================================================================
-
-if __name__ == "__main__":
-
-    with open('temp_espn_game_data.json', 'r') as fp:
-        data = json.load(fp)
-        # pprint.pprint(data)
-        WriteDataToExcel(data)
+#
+# if __name__ == "__main__":
+#
+#     with open('json/temp_espn_game_data.json', 'r') as fp:
+#         data = json.load(fp)
+#         # pprint.pprint(data)
+#         WriteDataToExcel(data)

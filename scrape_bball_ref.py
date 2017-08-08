@@ -5,7 +5,7 @@ from bs4 import Comment
 import pprint
 import json
 
-from output_bbal_ref import WriteDataToExcel
+from output_scraped_data import WriteDataToExcel
 
 pp = pprint.PrettyPrinter(indent=4)
 

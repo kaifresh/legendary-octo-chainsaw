@@ -9,7 +9,8 @@ import json
 import datetime
 import os
 
-from output_bbal_ref import WriteDataToExcel
+from output_scraped_data import WriteDataToExcel
+import scrape_espn_deeper_stats as deep
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -52,6 +53,7 @@ def GetSchedule():
                 count += 1
 
                 game_data = GetGameData(game)
+
                 if game_data is not None:
 
                     all_games.append(game_data)
@@ -64,6 +66,8 @@ def GetSchedule():
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
+#                               Where the magic happens...
+
 def GetGameData(game):
     team_data = game.findAll("a", {"class": "team-name"})  # get team names
     pitcher_data = game.findAll("a", {"name": "&lpos=mlb:schedule:player"})
@@ -71,6 +75,16 @@ def GetGameData(game):
 
     if len(game_date) == 0:
         return None
+
+    # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
+    # at_bats, runs = deep.GetAtBatsAndRunsTotals(team_data[0])
+    # at_bats, runs = deep.GetAwayBatsRunsSplits(team_data[0])
+    # at_bats, runs = deep.GetHomeBatsRunsSplits(team_data[0])
+    # home_wins, home_loses, away_wins, away_loses = deep.GetHomeWinsLosses(team_data[0])
+    deep.GetPitcherWinLoss(pitcher_data[0], team_data[1])
+
+    exit()
+    # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
 
     game_data = {}
 
@@ -192,10 +206,9 @@ def GetTeamData(team_anchor):
 
 if __name__ == "__main__":
 
-    with open('temp_espn_game_data.json', 'w') as fp:
+    with open('todays_espn_game_data.json', 'w') as fp:
         data = GetSchedule()
-        # pprint.pprint(data)
+
         json.dump(data, fp)
 
-
-        # WriteDataToExcel(data)
+        WriteDataToExcel(data)
