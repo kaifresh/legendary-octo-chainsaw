@@ -8,6 +8,7 @@ import pprint
 import json
 import datetime
 import os
+from multiprocessing.dummy import Pool as ThreadPool
 
 from output_scraped_data import WriteDataToExcel
 import scrape_espn_deeper_stats as deep
@@ -33,8 +34,9 @@ def GetSchedule():
     sched_html = requests.get(schedule_url, headers=header)
 
     all_games = []
-
-    count = 0
+    pool = ThreadPool(12)
+    #
+    # count = 0
 
     if sched_html.status_code == 200:
 
@@ -45,24 +47,46 @@ def GetSchedule():
         games_on_a_day = schedule_container.findAll("table", {"class": "schedule"})  # games are distributed over tables
 
         for games in games_on_a_day:
+
+            # Get the date string from the <h2> above the table
+            date_string = games.parent.find_previous_sibling("h2", {"class": "table-caption"}).find(text=True)
+            date_string = date_string.lstrip("0").replace(" 0", " ")
+
+            # Convert to date (year month day only, no time)
+            time = datetime.datetime.strptime(date_string, "%A, %B %d")
+            time = time.replace(year=datetime.date.today().year).date()
+
+            if not datetime.date.today() == time:
+                continue
+
+            print("Scraping games for {}\n".format(date_string))
+
             game_rows = games.findAll("tr", {"class": ["odd", "even"]})             # get all rows
 
-            for game in game_rows:
+            all_games = pool.map(GetGameData, game_rows)
 
-                print("Analysing game {}".format(count))
-                count += 1
+            # for game in game_rows:
+            #
+            #     print("Analysing game {}".format(count))
+            #     count += 1
 
-                game_data = GetGameData(game)
 
-                if game_data is not None:
-
-                    all_games.append(game_data)
+                # # DO THIS IN THREADS
+                # game_data = GetGameData(game)
+                #
+                # if game_data is not None:
+                #
+                #     all_games.append(game_data)
 
 
             print("` " * 100)
 
-    return all_games
+    pool.close()
+    pool.join()
 
+    print(all_games)
+
+    return all_games
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
@@ -73,18 +97,11 @@ def GetGameData(game):
     pitcher_data = game.findAll("a", {"name": "&lpos=mlb:schedule:player"})
     game_date = game.findAll("td", {"data-behavior": "date_time"})  # will be none for non-upcoming games
 
+
+    print("Getting Game Data for {}".format(team_data.findAll(text=True)))
+
     if len(game_date) == 0:
         return None
-
-    # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
-    # at_bats, runs, all_batting_rows = deep.GetAtBatsAndRunsTotals(team_data[0])
-    # at_bats, runs, all_batting_rows = deep.GetAwayBatsRunsSplits(team_data[0])
-    # at_bats, runs, all_batting_rows = deep.GetHomeBatsRunsSplits(team_data[0])
-    # home_wins, home_loses, away_wins, away_loses, all_batting_data = deep.GetHomeWinsLosses(team_data[0])
-    home_Ws, home_Ls, away_Ws, away_Ls, ERA, ERA_vs_opponent, IP_vs_opponent, all_pitcher_data = deep.GetPitcherDeepStats(pitcher_data[0], team_data[1]) # abs(x - y) or some thing... cross entropy stylez
-
-    exit()
-    # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
 
     game_data = {}
 
@@ -98,6 +115,30 @@ def GetGameData(game):
 
         game_data[side]['pitcher'] = GetPitcherData(pitcher_data[i])
         game_data[side]['pitcher']['team_id'] = game_data[side]['team_id']
+
+        # _, _, game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
+        # _, _, game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
+        # _, _, game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
+        #
+        # _, _, _, _, game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
+        # _, _, _, _, _, _, _, game_data[side]['pitcher_deep'] = deep.GetPitcherDeepStats( pitcher_data[i], team_data[abs(i-1)] )  # abs(x - y) or some thing... cross entropy stylez
+
+        game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
+        game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
+        game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
+
+        game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
+        game_data[side]['pitcher_deep'] = deep.GetPitcherDeepStats(pitcher_data[i], team_data[ abs(i - 1)])  # abs(x - y) or some thing... cross entropy stylez
+
+
+        # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
+        # at_bats, runs, all_batting_rows = deep.GetAtBatsAndRunsTotals(team_data[0])
+        # at_bats, runs, all_batting_rows = deep.GetAwayBatsRunsSplits(team_data[0])
+        # at_bats, runs, all_batting_rows = deep.GetHomeBatsRunsSplits(team_data[0])
+        # home_wins, home_loses, away_wins, away_loses, all_batting_data = deep.GetHomeWinsLosses(team_data[0])
+        # home_Ws, home_Ls, away_Ws, away_Ls, ERA, ERA_vs_opponent, IP_vs_opponent, all_pitcher_data = deep.GetPitcherDeepStats(pitcher_data[0], team_data[1]) # abs(x - y) or some thing... cross entropy stylez
+        # exit()
+        # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
 
     print("-"*100)
 
@@ -211,4 +252,4 @@ if __name__ == "__main__":
 
         json.dump(data, fp)
 
-        WriteDataToExcel(data)
+        # WriteDataToExcel(data)
