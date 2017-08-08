@@ -55,11 +55,10 @@ pitcher_home_row = 31
 pitcher_away_row = 32
 
 # ================================================================================================================
+
 win_loss_key = "W/L"
 team_score_key = "Score"
-
 pitcher_name_key = 'name'
-
 pitcher_win_loss_key = "RESULT" if IS_SCRAPING_ESPN else "DECISION"
 
 # ================================================================================================================
@@ -110,8 +109,8 @@ def WriteProfile(pitcher_data, worksheet, row_offset=0, col_offset=0):
 
 def WriteSuitabilityStats(team_data, worksheet, orig_col_offset=0, is_home=None):
 
-    at_bats_total = team_data['batting']['Totals']['AB']
-    runs_total = team_data['batting']['Totals']['R']
+    at_bats_total = team_data['batting_total']['Totals']['AB']
+    runs_total = team_data['batting_total']['Totals']['R']
 
     home_at_bats_total = team_data['batting_home']['Totals']['AB']
     home_runs_total = team_data['batting_home']['Totals']['R']
@@ -144,7 +143,7 @@ def WriteSuitabilityStats(team_data, worksheet, orig_col_offset=0, is_home=None)
 
     # - - - - - - - - - - - - FORM
 
-    col_offset = orig_col_offset + (0 if is_home else 1)
+    col_offset = orig_col_offset + (1 if is_home else 0)
 
     worksheet.cell(column=col_offset, row=batting_total_row, value=at_bats_total)
     worksheet.cell(column=col_offset + suitability_stats_col_offset, row=batting_total_row, value=runs_total)
@@ -230,20 +229,21 @@ def WriteDataToExcel(data):
         home = game['HOME']
         away = game['AWAY']
 
-        WriteMatchupStats(home, ratings, total_col_offset, matchup_row_offset=0)  # no vertical offset
-        WriteMatchupStats(away, ratings, total_col_offset, matchup_row_offset=1)  # no vertical offset
+        WriteMatchupStats(away, ratings, total_col_offset, matchup_row_offset=0)  # no vertical offset
+        WriteMatchupStats(home, ratings, total_col_offset, matchup_row_offset=1)  # no vertical offset
 
-        WriteHeader(home, ratings, total_col_offset-1, is_home=True)
-        WriteResult(home, ratings, total_col_offset)
-        WriteRuns(home, ratings, total_col_offset)
-        WriteSuitabilityStats(home, ratings, total_col_offset, is_home=True)  # no vertical offset
 
-        total_col_offset += n_previous_games + col_offset_home_away
-
-        WriteHeader(away, ratings, total_col_offset-1, is_home=False)
+        WriteHeader(away, ratings, total_col_offset - 1, is_home=False)
         WriteResult(away, ratings, total_col_offset)
         WriteRuns(away, ratings, total_col_offset)
         WriteSuitabilityStats(home, ratings, total_col_offset, is_home=False)
+
+        total_col_offset += n_previous_games + col_offset_home_away
+
+        WriteHeader(home, ratings, total_col_offset - 1, is_home=True)
+        WriteResult(home, ratings, total_col_offset)
+        WriteRuns(home, ratings, total_col_offset)
+        WriteSuitabilityStats(home, ratings, total_col_offset, is_home=True)  # no vertical offset
 
 
         total_col_offset += n_previous_games + col_offset_games

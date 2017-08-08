@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-python scrape-espn.py;
+python3 scrape_espn.py;

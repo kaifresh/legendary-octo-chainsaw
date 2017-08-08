@@ -111,29 +111,13 @@ def GetGameData(game):
         game_data[side]['pitcher'] = GetPitcherData(pitcher_data[i])
         game_data[side]['pitcher']['team_id'] = game_data[side]['team_id']
 
-        # _, _, game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
-        # _, _, game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
-        # _, _, game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
-        #
-        # _, _, _, _, game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
-        # _, _, _, _, _, _, _, game_data[side]['pitcher_deep'] = deep.GetPitcherDeepStats( pitcher_data[i], team_data[abs(i-1)] )  # abs(x - y) or some thing... cross entropy stylez
-
-        game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
+        game_data[side]['batting_total'] = deep.GetAtBatsAndRunsTotals(team_data[i])
         game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
         game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
 
         game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
         game_data[side]['pitcher_deep'] = deep.GetPitcherSuitabilityStats(pitcher_data[i], team_data[ abs(i - 1)])  # abs(x - y) or some thing... cross entropy stylez
 
-
-        # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
-        # at_bats, runs, all_batting_rows = deep.GetAtBatsAndRunsTotals(team_data[0])
-        # at_bats, runs, all_batting_rows = deep.GetAwayBatsRunsSplits(team_data[0])
-        # at_bats, runs, all_batting_rows = deep.GetHomeBatsRunsSplits(team_data[0])
-        # home_wins, home_loses, away_wins, away_loses, all_batting_data = deep.GetHomeWinsLosses(team_data[0])
-        # home_Ws, home_Ls, away_Ws, away_Ls, ERA, ERA_vs_opponent, IP_vs_opponent, all_pitcher_data = deep.GetPitcherDeepStats(pitcher_data[0], team_data[1]) # abs(x - y) or some thing... cross entropy stylez
-        # exit()
-        # ~  ! ! ! ! ! ! ~  ! ! ! ! ! ! ~  ! ! ! ! ! !
 
     # print("-"*100)
 
@@ -214,6 +198,7 @@ def GetTeamData(team_anchor):
 
         ### This is a fragile method...
         ### Column header positions as of August 2017...
+        ### TODO: extract column positions from header
         date_col = 0
         opponent_col = 1
         result_col = 2
@@ -251,4 +236,4 @@ if __name__ == "__main__":
 
         json.dump(data, fp)
 
-        # WriteDataToExcel(data)
+        WriteDataToExcel(data)
