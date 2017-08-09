@@ -1,10 +1,11 @@
 <?php
 
-
+$output = shell_exec('python scrape_espn.py');
+echo "<div>$output</div>";
 
 
 ?>
 
 <h1>
-NOW WE CEWKIN W GASS
+Getting Todays MLB Info. Please wait.
 </h1>
