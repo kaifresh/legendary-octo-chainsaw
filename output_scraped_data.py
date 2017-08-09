@@ -2,6 +2,7 @@ import json
 import re
 import datetime
 import openpyxl
+import pprint
 
 IS_SCRAPING_ESPN = True
 # ================================================================================================================
@@ -201,18 +202,15 @@ def WritePitcherMatchupStats(team_data, worksheet, col_offset=0, matchup_row_off
 
 
 def WriteScrapedDataToExcel(data):
+    pprint.pprint(data)
 
     print("Opening dummy spreadsheet....")
 
     base = openpyxl.load_workbook(filename="worksheets/RUN-SHEET-BASE.xlsx")
 
-    print("Opening ")
-
     # = = = = = = = = = = = = = = = = = = = = = = RATINGS  = = = = = = = = = = = = = = = = = =
 
     all_ratings = [base['RATINGS - 1'], base['RATINGS - 2']]
-
-
 
     total_col_offset = -1
     sheet_idx = -1
@@ -313,13 +311,11 @@ def WriteScrapedDataToExcel(data):
     # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     path = "./excel/MLB_{}.xlsx".format(datetime.datetime.today().strftime('%Y-%m-%d'))
     base.save(path)
-    print("<a href='{}' download>Click to download today's spreadsheet</a>".format(path))
-
-
+    print("Wrote date to new spreadsheet....\nLook in the excel folder".format(path))
 
 
 # ================================================================================================================
-#
+
 if __name__ == "__main__":
 
     with open('./todays_espn_game_data.json', 'r') as fp:

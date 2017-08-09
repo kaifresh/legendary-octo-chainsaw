@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+pwd;
+
+# Get bash to the same location as the folder that this script resides in....
+BASEDIR=$(dirname "$0");
+cd $BASEDIR;
+
+pwd;
+
+python3 ./scrape_espn.py;
+
+read -n 1 -s -r -p "Scrape is done! Press any key to exit."

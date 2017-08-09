@@ -2,10 +2,10 @@ from bs4 import BeautifulSoup
 from bs4 import Comment
 
 import pytz
-
 import requests
 
 import re
+
 import pprint
 import json
 import datetime
@@ -88,8 +88,6 @@ def GetSchedule():
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 #                               Where the magic happens...
-
-
 
 def GetGameData(game):
 

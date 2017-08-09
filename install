@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)";
+
+# PREPEND Homebrew's /bin folder to the path...
+echo 'export PATH=/usr/local/bin:/usr/local/sbin:$PATH' >>~/.bash_profile;
+echo 'export PATH=/usr/local/bin:/usr/local/sbin:$PATH' >>~/.profile;
+
+# Reload with the new path
+source ~/.bash_profile;
+
+brew install python3;
+
+python3 ./setup/get-pip.py;
+
+pip3 install -r ./setup/requirements.txt;
+
+chmod 755 ./run;
