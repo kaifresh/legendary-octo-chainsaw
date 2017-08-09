@@ -1,5 +1,6 @@
 <?php
 
+echo "<b>TEST</b>";
 $cmd = 'python scrape_espn.py';
 
 $descriptorspec = array(
@@ -17,6 +18,7 @@ if (is_resource($process)) {
     }
 }
 echo "</pre>";
+
 
 ?>
 
