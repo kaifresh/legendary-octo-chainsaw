@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 from bs4 import Comment
 
+import pytz
+
 import requests
 
 import re
@@ -60,11 +62,13 @@ def GetSchedule():
             date_string = games.parent.find_previous_sibling("h2", {"class": "table-caption"}).find(text=True)
             date_string = date_string.lstrip("0").replace(" 0", " ")
 
-            # Convert to date (year month day only, no time)
-            time = datetime.datetime.strptime(date_string, "%A, %B %d")
-            time = time.replace(year=datetime.date.today().year).date()
+            # Convert to date (year month day only, no schdule_date)
+            schdule_date = datetime.datetime.strptime(date_string, "%A, %B %d")
+            schdule_date = schdule_date.replace(year=datetime.date.today().year).date()
 
-            if not datetime.date.today() == time:
+            now_date = datetime.datetime.now(pytz.timezone("Australia/Sydney")).date()
+
+            if not now_date == schdule_date:
                 continue
 
             print("Scraping games for {}\n".format(date_string))
