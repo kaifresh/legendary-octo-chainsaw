@@ -13,6 +13,8 @@ import os
 base_mlb = "http://www.espn.com"
 header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0',}
 
+
+
 # ========================================================================================
 # ---------------------------------------Pitcher------------------------------------------
 # ========================================================================================
@@ -53,23 +55,8 @@ def GetPitcherSuitabilityStats(pitcher_anchor, opposing_team_anchor):
                 "ERA": None,
                 "IP": None
             }
-        #
-        # home_Ws = all_pitcher_data['By Breakdown']['Home']['W']
-        # home_Ls = all_pitcher_data['By Breakdown']['Home']['L']
-        # away_Ws = all_pitcher_data['By Breakdown']['Away']['W']
-        # away_Ls = all_pitcher_data['By Breakdown']['Away']['L']
-        # ERA = all_pitcher_data['Overall']['Total']['ERA']
-        # opponent_name = opposing_team_anchor.find("abbr").text
-        #
-        # try:
-        #     ERA_vs_opponent = all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP']
-        #     IP_vs_opponent = all_pitcher_data['By Opponent']['vs. {}'.format(opponent_name)]['IP']
-        # except:
-        #     ERA_vs_opponent = None,
-        #     IP_vs_opponent = None
 
         return all_pitcher_data
-        # return home_Ws, home_Ls, away_Ws, away_Ls, ERA, ERA_vs_opponent, IP_vs_opponent, all_pitcher_data
 # - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ----------------------------------------Team Wins/Losses--------------------------------------------
 # - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -87,14 +74,8 @@ def GetHomeWinsLosses(team_anchor):
         batting_table_rows = soup.find("table", {"class": "tablehead"}).findAll("tr")
 
         all_batting_rows = ScrapeStatsDataTableRows(batting_table_rows)['NAME']
-        #
-        # home_Ws = all_batting_rows['Home']['W']
-        # home_Ls = all_batting_rows['Home']['L']
-        # away_Ws = all_batting_rows['Away']['W']
-        # away_Ls = all_batting_rows['Away']['L']
 
         return all_batting_rows
-        # return home_Ws, home_Ls, away_Ws, away_Ls, all_batting_rows
 
 # - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # --------------------------------Team Batting-------------------------------------------
@@ -134,11 +115,8 @@ def GetAtBatsRunsGeneric(soup):
 
     all_batting_rows = ScrapeStatsDataTableRows(batting_table_rows)['NAME']
 
-    # at_bats = all_batting_rows['Totals']['AB']
-    # runs = all_batting_rows['Totals']['R']
-
     return all_batting_rows
-    # return at_bats, runs, all_batting_rows
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

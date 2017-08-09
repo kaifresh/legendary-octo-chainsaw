@@ -19,6 +19,7 @@ pp = pprint.PrettyPrinter(indent=4)
 base_mlb = "http://www.espn.com"
 header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0',}
 
+
 # For status messages...
 __n_games = 0
 __cur_n = 0
@@ -28,7 +29,7 @@ def GetSchedule():
 
     global __n_games
 
-    # So you go to the scheduel
+    # So you go to the schedule
 
     # For eahc game on a given day follow:
     #       The link for each team and get
@@ -84,9 +85,12 @@ def GetSchedule():
 
 #                               Where the magic happens...
 
+
+
 def GetGameData(game):
 
     global __cur_n
+    global __n_games
 
     team_data = game.findAll("a", {"class": "team-name"})  # get team names
     pitcher_data = game.findAll("a", {"name": "&lpos=mlb:schedule:player"})
@@ -101,26 +105,49 @@ def GetGameData(game):
     game_data = {}
 
     game_data["SOURCE"] = "ESPN"
-    game_data["SCRAPE_DATE"] = datetime.datetime.today()
+    game_data["SCRAPE_DATE"] = datetime.datetime.today().strftime("%A %B %d %Y")
 
     for i, side in enumerate(["AWAY", "HOME"]):
 
-        # print('Get Game Data: {}'.format(side))
+        # TRY/EXCEPT pattern handles cases where the data may not exist on the page...
 
-        game_data[side] = GetTeamData(team_data[i])  # format is "AWAY @ HOME"
+        # team stats
+        try:
+            game_data[side] = GetTeamData(team_data[i])  # format is "AWAY @ HOME"
+        except:
+            pass
+        try:
+            game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
+        except:
+            pass
 
-        game_data[side]['pitcher'] = GetPitcherData(pitcher_data[i])
-        game_data[side]['pitcher']['team_id'] = game_data[side]['team_id']
+        try:
+            game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
+        except:
+            pass
+        try:
+            game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
+        except:
+            pass
+        try:
+            game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
+        except:
+            pass
 
-        game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
-        game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
-        game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
+        # pitcher stats
+        try:
+            game_data[side]['pitcher'] = GetPitcherData(pitcher_data[i])
+        except:
+            pass
+        try:
+            game_data[side]['pitcher']['team_id'] = game_data[side]['team_id']
+        except:
+            pass
+        try:
+            game_data[side]['pitcher_deep'] = deep.GetPitcherSuitabilityStats(pitcher_data[i], team_data[ abs(i - 1)])  # cross entropy stylez
+        except:
+            pass
 
-        game_data[side]['batting_splits'] = deep.GetHomeWinsLosses(team_data[i])
-        game_data[side]['pitcher_deep'] = deep.GetPitcherSuitabilityStats(pitcher_data[i], team_data[ abs(i - 1)])  # abs(x - y) or some thing... cross entropy stylez
-
-
-    # print("-"*100)
 
     __cur_n += 1
 
@@ -129,10 +156,16 @@ def GetGameData(game):
     return game_data
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
 
 def GetPitcherData(pitcher_anchor):
-
-    # print("\tGet Pitcher Data: {}".format(pitcher_anchor.find(text=True)))
 
     pitcher_data = {}
 
@@ -175,8 +208,6 @@ def GetPitcherData(pitcher_anchor):
 
 def GetTeamData(team_anchor):
 
-    # print("\tGet Team Data: {}".format(team_anchor.find("abbr")["title"]))
-
     team_data = {
         "team_id": team_anchor.find("abbr")["title"],
         "W/L": [],
@@ -185,10 +216,9 @@ def GetTeamData(team_anchor):
         "Date & Box": [],
     }
 
-    # Modify the URL to get to the FULL stats page
+    # Modify the URL to get to the FULL stats page from the mini stats page
     full_schedule_endpoint = os.path.dirname( team_anchor['href'].replace("team", "team/schedule") )
     team_url = base_mlb+full_schedule_endpoint
-    # team_url = base_mlb+team_anchor['href']
 
     team_html = requests.get(team_url, headers=header)
 
@@ -197,14 +227,14 @@ def GetTeamData(team_anchor):
 
         game_rows = soup.findAll("tr")
 
-        ### This is a fragile method...
-        ### Column header positions as of August 2017...
-        ### TODO: extract column positions from header
+        #  This is a fragile method...
+        #  Column header positions as of August 2017...
+        #  TODO: extract column positions from header
         date_col = 0
         opponent_col = 1
         result_col = 2
-        winning_pitcher_col = 3
-        losing_pitcher_col = 3
+        # winning_pitcher_col = 3
+        # losing_pitcher_col = 3
 
         for game in game_rows:
             cells = game.findAll("td")
@@ -228,6 +258,14 @@ def GetTeamData(team_anchor):
 
     return team_data
 
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 if __name__ == "__main__":
