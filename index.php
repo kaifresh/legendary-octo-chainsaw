@@ -6,6 +6,7 @@ error_reporting(-1);
 
 echo "<b>TEST</b>";
 $cmd = 'python scrape_espn.py';
+$cmd = 'ls /tmp/Python-3.6.2';
 
 $descriptorspec = array(
    0 => array("pipe", "r"),   // stdin is a pipe that the child will read from
