@@ -155,7 +155,7 @@ def GetGameData(game):
 
     __cur_n += 1
 
-    print("Scraping: {0:0.0f}%".format((__cur_n/__n_games) * 100))
+    print("Scraping: {:.2f}%".format((__cur_n/__n_games) * 100))
 
     return game_data
 
