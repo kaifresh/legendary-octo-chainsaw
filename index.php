@@ -41,7 +41,7 @@ $cmd = 'ls ~/tmp/Python-3.6.2';
 
 run_cmd_with_output($cmd);
 
-$cmd = 'python /home/kaitan3/kaitan.io/public/aneyrin/scrape_espn.py';
+$cmd = ' /home/kaitan3/kaitan.io/public/aneyrin/scrape_espn.py';
 
 run_cmd_with_output($cmd);
 
