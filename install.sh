@@ -4,8 +4,8 @@
 #brew install wget;
 #wget
 
-python ./setup/get-pip.py;
+python3 ./setup/get-pip.py;
 
-pip install -r ./setup/requirements.txt;
+pip3 install -r ./setup/requirements.txt;
 
 chmod 755 ./run.sh;

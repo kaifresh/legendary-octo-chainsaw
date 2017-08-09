@@ -11,7 +11,7 @@ import os
 from multiprocessing.dummy import Pool as ThreadPool
 import multiprocessing
 
-from output_scraped_data import WriteDataToExcel
+from output_scraped_data import WriteScrapedDataToExcel
 import scrape_espn_deeper_stats as deep
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -101,6 +101,7 @@ def GetGameData(game):
     game_data = {}
 
     game_data["SOURCE"] = "ESPN"
+    game_data["SCRAPE_DATE"] = datetime.datetime.today()
 
     for i, side in enumerate(["AWAY", "HOME"]):
 
@@ -111,7 +112,7 @@ def GetGameData(game):
         game_data[side]['pitcher'] = GetPitcherData(pitcher_data[i])
         game_data[side]['pitcher']['team_id'] = game_data[side]['team_id']
 
-        game_data[side]['batting_total'] = deep.GetAtBatsAndRunsTotals(team_data[i])
+        game_data[side]['batting'] = deep.GetAtBatsAndRunsTotals(team_data[i])
         game_data[side]['batting_home'] = deep.GetHomeBatsRunsSplits(team_data[i])
         game_data[side]['batting_away'] = deep.GetAwayBatsRunsSplits(team_data[i])
 
@@ -236,4 +237,4 @@ if __name__ == "__main__":
 
         json.dump(data, fp)
 
-        WriteDataToExcel(data)
+        WriteScrapedDataToExcel(data)

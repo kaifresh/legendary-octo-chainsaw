@@ -61,7 +61,7 @@ team_score_key = "Score"
 pitcher_name_key = 'name'
 pitcher_win_loss_key = "RESULT" if IS_SCRAPING_ESPN else "DECISION"
 
-# ================================================================================================================
+# =============================================sub function =========================================================
 
 def WriteHeader(team_data, worksheet, col_offset=0, is_home=None):
 
@@ -74,22 +74,26 @@ def WriteHeader(team_data, worksheet, col_offset=0, is_home=None):
 
     worksheet.cell(column=col_offset, row=header_row, value="{} {}".format(home_away, team_data['team_id']))
 
-
 def WriteResult(team_data, worksheet, col_offset=0):
     # wins and losses
     for i in range(n_previous_games):
-        reverse_idx = n_previous_games - i - 1
-        worksheet.cell(column=col_offset + reverse_idx, row=result_row, value="{}".format( team_data[ win_loss_key ][i] ))
+        reverse_excel_idx = n_previous_games - i - 1
+        # REVERSE DATA INDEX, scraped table data is ascending chronological & we want most recent
+        W_or_L = team_data[ win_loss_key ][-1-i]
+        worksheet.cell(column=col_offset + reverse_excel_idx, row=result_row, value= W_or_L)
 
 def WriteRuns(team_data, worksheet, col_offset=0):
     # numbers
     for i in range(n_previous_games):
-        score = team_data[ team_score_key ][i]
-        score = re.search(r'\d+', score).group()  # get only the first number using .search()
+        # REVERSE INDEX, scraped table data is ascending chronological & we want most recent
+        score = team_data[ team_score_key ][-1-i]
+        score = [int(x) for x in re.findall(r'\d+', score)]     # regex out the two numbers & convert to int
+        score = max(score) if team_data[win_loss_key][-1 - i] == "W" else min(score)
+
         reverse_idx = n_previous_games - i - 1
         worksheet.cell(column=col_offset + reverse_idx, row=runs_row, value=score)
 
-# ================================================================================================================
+# =============================================sub function =========================================================
 
 def WriteProfile(pitcher_data, worksheet, row_offset=0, col_offset=0):
 
@@ -99,18 +103,18 @@ def WriteProfile(pitcher_data, worksheet, row_offset=0, col_offset=0):
     # Write previous decisions
     for i in range(n_previous_games):
         try:
-            worksheet.cell(column=col_offset + 2 + i, row=row_offset, value=pitcher_data[ pitcher_win_loss_key ][i])
+            reverse_idx = n_previous_games - i + 1
+            worksheet.cell(column=col_offset + reverse_idx, row=row_offset, value=pitcher_data[ pitcher_win_loss_key ][i])
         except:
-            worksheet.cell(column=col_offset + 2 + i, row=row_offset, value="NO DATA")
+            reverse_idx = n_previous_games - i + 1
+            worksheet.cell(column=col_offset + reverse_idx, row=row_offset, value="NO DATA")
 
-    # print("\n\n", "="*50, "\n")
-
-# ================================================================================================================
+# =============================================sub function =========================================================
 
 def WriteSuitabilityStats(team_data, worksheet, orig_col_offset=0, is_home=None):
 
-    at_bats_total = team_data['batting_total']['Totals']['AB']
-    runs_total = team_data['batting_total']['Totals']['R']
+    at_bats_total = team_data['batting']['Totals']['AB']
+    runs_total = team_data['batting']['Totals']['R']
 
     home_at_bats_total = team_data['batting_home']['Totals']['AB']
     home_runs_total = team_data['batting_home']['Totals']['R']
@@ -202,7 +206,7 @@ def WriteMatchupStats(team_data, worksheet, col_offset=0, matchup_row_offset=0):
 # ================================================================================================================
 
 
-def WriteDataToExcel(data):
+def WriteScrapedDataToExcel(data):
 
     base = openpyxl.load_workbook(filename="worksheets/RUN-SHEET-BASE.xlsx")
 
@@ -236,7 +240,7 @@ def WriteDataToExcel(data):
         WriteHeader(away, ratings, total_col_offset - 1, is_home=False)
         WriteResult(away, ratings, total_col_offset)
         WriteRuns(away, ratings, total_col_offset)
-        WriteSuitabilityStats(home, ratings, total_col_offset, is_home=False)
+        WriteSuitabilityStats(away, ratings, total_col_offset, is_home=False)
 
         total_col_offset += n_previous_games + col_offset_home_away
 
@@ -269,11 +273,11 @@ def WriteDataToExcel(data):
             pitcher_row += profile_row_offset_game
             continue
 
-        WriteProfile(home, profiling, pitcher_row, pitcher_col)
+        WriteProfile(away, profiling, pitcher_row, pitcher_col)
 
         pitcher_row += profile_row_offset_home_away
 
-        WriteProfile(away, profiling, pitcher_row, pitcher_col)
+        WriteProfile(home, profiling, pitcher_row, pitcher_col)
 
         pitcher_row += profile_row_offset_game
 
@@ -289,4 +293,4 @@ if __name__ == "__main__":
     with open('./todays_espn_game_data.json', 'r') as fp:
         data = json.load(fp)
         # pprint.pprint(data)
-        WriteDataToExcel(data)
+        WriteScrapedDataToExcel(data)
