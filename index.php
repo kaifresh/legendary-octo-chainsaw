@@ -37,10 +37,14 @@ ini_set('display_errors', 1);
 error_reporting(-1);
 
 echo "<b>TEST</b>";
-$cmd = 'python scrape_espn.py';
 $cmd = 'ls ~/tmp/Python-3.6.2';
 
 run_cmd_with_output($cmd);
+
+$cmd = 'python /home/kaitan3/kaitan.io/public/aneyrin/scrape_espn.py';
+
+run_cmd_with_output($cmd);
+
 
 
 ?>
