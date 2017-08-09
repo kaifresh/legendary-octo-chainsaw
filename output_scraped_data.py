@@ -283,7 +283,7 @@ def WriteScrapedDataToExcel(data):
 
     # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-    base.save("MLB_{}.xlsx".format(datetime.datetime.today().strftime('%Y-%m-%d')))
+    base.save("excel/MLB_{}.xlsx".format(datetime.datetime.today().strftime('%Y-%m-%d')))
 
 
 # ================================================================================================================
