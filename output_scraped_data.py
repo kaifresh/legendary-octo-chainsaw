@@ -1,13 +1,7 @@
 import json
-import pprint
 import re
 import datetime
 import openpyxl
-import copy
-
-from openpyxl.styles import Font
-from openpyxl.styles.colors import RED
-font = Font(color=RED)
 
 IS_SCRAPING_ESPN = True
 # ================================================================================================================
@@ -208,13 +202,17 @@ def WritePitcherMatchupStats(team_data, worksheet, col_offset=0, matchup_row_off
 
 def WriteScrapedDataToExcel(data):
 
+    print("Opening dummy spreadsheet....")
+
     base = openpyxl.load_workbook(filename="worksheets/RUN-SHEET-BASE.xlsx")
+
+    print("Opening ")
 
     # = = = = = = = = = = = = = = = = = = = = = = RATINGS  = = = = = = = = = = = = = = = = = =
 
     all_ratings = [base['RATINGS - 1'], base['RATINGS - 2']]
 
-    print(base.sheetnames)
+
 
     total_col_offset = -1
     sheet_idx = -1
@@ -281,8 +279,6 @@ def WriteScrapedDataToExcel(data):
         except:
             pass
 
-
-
         total_col_offset += n_previous_games + col_offset_games
 
     # = = = = = = = = = = = = = = = = = = = = = PROFILING  = = = = = = = = = = = = = = = = = = = =
@@ -315,8 +311,11 @@ def WriteScrapedDataToExcel(data):
         pitcher_row += profile_row_offset_game
 
     # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+    path = "./excel/MLB_{}.xlsx".format(datetime.datetime.today().strftime('%Y-%m-%d'))
+    base.save(path)
+    print("<a href='{}' download>Click to download today's spreadsheet</a>".format(path))
 
-    base.save("excel/MLB_{}.xlsx".format(datetime.datetime.today().strftime('%Y-%m-%d')))
+
 
 
 # ================================================================================================================

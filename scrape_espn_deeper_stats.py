@@ -1,19 +1,9 @@
 from bs4 import BeautifulSoup
-from bs4 import Comment
-
 import requests
-
-import re
-import pprint
-import json
-import datetime
 import os
-
 
 base_mlb = "http://www.espn.com"
 header = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0',}
-
-
 
 # ========================================================================================
 # ---------------------------------------Pitcher------------------------------------------
@@ -81,11 +71,13 @@ def GetHomeWinsLosses(team_anchor):
 # --------------------------------Team Batting-------------------------------------------
 # - - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
 def GetAtBatsAndRunsTotals(team_anchor):
 
     # print("\tGet At Bats And Runs Totals: {}".format(team_anchor.find(text=True)))
 
     return GetAtBatsRunsGenericWrap( team_anchor['href'] )
+
 
 def GetHomeBatsRunsSplits(team_anchor):
 
@@ -93,11 +85,13 @@ def GetHomeBatsRunsSplits(team_anchor):
 
     return GetAtBatsRunsGenericWrap(team_anchor['href'], "/split/33")
 
+
 def GetAwayBatsRunsSplits(team_anchor):
 
     # print("\tGet AWAY At Bats And Runs Splits: {}".format(team_anchor.find(text=True)))
 
     return GetAtBatsRunsGenericWrap(team_anchor['href'], "/split/34")
+
 
 def GetAtBatsRunsGenericWrap(href, extra_endpoint=""):
     endpoint = os.path.dirname(href.replace("team/", "team/stats/batting/"))
@@ -117,7 +111,6 @@ def GetAtBatsRunsGeneric(soup):
 
     return all_batting_rows
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -130,6 +123,7 @@ def GetAtBatsRunsGeneric(soup):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 def ScrapeStatsDataTableRows(table_rows):
 
